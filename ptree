@@ -1,0 +1,62 @@
+#!/bin/ksh
+Indent () {
+	printf "$2%.0s" {1..$1}
+}
+BuildLine () {
+	LC=$2
+	[[ -z $2 ]] && { LC=0; }
+	CMDLINE=$(xargs -0 < /proc/$1/cmdline)
+	(( LS = $(tput cols) - LC*2 ))
+	LINE=$(echo "$1 $CMDLINE")
+	echo ${LINE:0:$LS}
+}
+GetChld () {
+	CPS=$(</proc/$1/task/$1/children)
+	NBI=$2
+	for j in $CPS
+	do 
+		Indent $NBI "  "
+		printf "$(BuildLine $j $NBI)\n"
+		(( NBI = NBI + 1 ))
+		GetChld $j $NBI
+		NBI=$2
+	done
+}
+GetPPid () {
+	[[ $1 == "1" ]] && return 2	
+	PPid=$(cat /proc/$1/status | awk '/PPid/ {print $2}')
+	if [[ "$PPid" == "1" ]]
+	then 
+		echo "1"
+		return 1
+	else
+		echo "$PPid"
+		GetPPid $PPid
+	fi
+}
+main () {
+	P=$1
+	typeset -i CNT=0;
+	typeset -i c=0;
+	[[ -z $1 ]] && { P="1"; }
+	[[ ! -d /proc/$1 ]] && {
+		echo "Process $1 does not exists!"
+		return 1
+	}
+	r=$(echo $(GetPPid $P))
+	c=$(echo $r | awk '{print NF}')
+	while [[  $c != "0" ]]
+	do
+		cur=$(echo $r | awk -v rv=$c '{print $rv}')
+		[[ $cur != "1" ]] && { Indent $CNT "  ";}
+		printf "$(BuildLine $cur $CNT)\n"
+		(( c = c - 1 ))
+		(( CNT = CNT + 1 ))
+	done
+	[[ $P == "1" ]] || { Indent $CNT "  ";}
+	printf "$(BuildLine $P $CNT)\n"
+	(( CNT = CNT + 1 ))
+	GetChld $P $CNT
+}
+main $1
+
