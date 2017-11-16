@@ -4,7 +4,7 @@ Indent () {
 }
 BuildLine () {
   LC=$2
-  [[ -z $2 ]] && { LC=0; }
+  [[ -z $2 ]] && LC=0
   CMDLINE=$(xargs -0 < /proc/$1/cmdline)
   (( LS = $(tput cols) - LC*2 ))
   LINE=$(echo "$1 $CMDLINE")
@@ -38,7 +38,7 @@ main () {
   P=$1
   typeset -i CNT=0;
   typeset -i c=0;
-  [[ -z $1 ]] && { P="1"; }
+  [[ -z $1 ]] && P="1"
   [[ ! -d /proc/$1 ]] && {
     echo "Process $1 does not exists!"
     return 1
@@ -48,12 +48,12 @@ main () {
   while [[  $c != "0" ]]
   do
     cur=$(echo $r | awk -v rv=$c '{print $rv}')
-    [[ $cur != "1" ]] && { Indent $CNT "  ";}
+    [[ $cur != "1" ]] && Indent $CNT "  "
     printf "$(BuildLine $cur $CNT)\n"
     (( c = c - 1 ))
     (( CNT = CNT + 1 ))
   done
-  [[ $P == "1" ]] || { Indent $CNT "  ";}
+  [[ $P == "1" ]] || Indent $CNT "  "
   printf "$(BuildLine $P $CNT)\n"
   (( CNT = CNT + 1 ))
   GetChld $P $CNT
